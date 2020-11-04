@@ -1,5 +1,5 @@
-/Users/alexandra/Documents/GitHub/amonglock/.theos/obj/debug/arm64/Tweak.x.61334e9f.o: \
-  /Users/alexandra/Documents/GitHub/amonglock/.theos/obj/debug/arm64/Tweak.x.m \
+/Users/alexandra/Documents/GitHub/amonglock/.theos/obj/debug/arm64/Tweak.xm.61334e9f.o: \
+  /Users/alexandra/Documents/GitHub/amonglock/.theos/obj/debug/arm64/Tweak.xm.mm \
   /Users/alexandra/theos/Prefix.pch \
   /Users/alexandra/theos/vendor/include/_Prefix/BackwardsCompat.h \
   /Users/alexandra/theos/vendor/include/_Prefix/IOSMacros.h \
