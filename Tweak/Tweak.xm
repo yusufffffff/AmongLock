@@ -122,7 +122,20 @@
 
 	passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
 	passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
-	[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButton.png"]];
+	[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButtonOff.png"]];
+
+	if (![passcodeButton isDescendantOfView:self]) [self addSubview:passcodeButton];
+
+	[self performSelector:@selector(changePasscodeButtonImages) withObject:self afterDelay:0.5];
+
+}
+
+%new
+- (void)changePasscodeButtonImages {
+
+	passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
+	passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
+	[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButtonOn.png"]];
 
 	if (![passcodeButton isDescendantOfView:self]) [self addSubview:passcodeButton];
 
@@ -135,12 +148,6 @@
 - (void)setColor:(UIColor *)arg1 { // remove passcode button background
 
 	%orig(nil);
-
-}
-
-- (void)setHighlighted:(BOOL)arg1 { // disable passcode button highlighting
-
-	%orig(NO);
 
 }
 
@@ -213,7 +220,7 @@
 
 %end
 
-%hook SBUIPasscodeLockViewBase 
+%hook SBUIPasscodeLockViewBase
 
 - (void)_sendDelegateKeypadKeyDown { // play random button sound when pressing passcode button
 

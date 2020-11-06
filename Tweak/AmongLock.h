@@ -18,9 +18,6 @@ UIImageView* emergencyButtonImage;
 UIImageView* backspaceButtonImage;
 UIImageView* cancelButtonImage;
 
-@interface CSCoverSheetViewController : UIViewController
-@end
-
 @interface CSPasscodeViewController : UIViewController
 - (void)ejectionVideoFinishedPlaying;
 @end
@@ -29,6 +26,7 @@ UIImageView* cancelButtonImage;
 @end
 
 @interface SBPasscodeNumberPadButton : UIView
+- (void)changePasscodeButtonImages;
 @end
 
 @interface TPNumberPadButton : UIView
