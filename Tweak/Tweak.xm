@@ -28,7 +28,7 @@
 
 
 	// ejection video
-	NSString* ejectionFilePath = [NSString stringWithFormat:@"/Library/AmongLock/ejection.mp4"];
+	NSString* ejectionFilePath = [NSString stringWithFormat:@"/Library/AmongLock/ejectionX3.mp4"];
     NSURL* ejectionUrl = [NSURL fileURLWithPath:ejectionFilePath];
 
     if (!ejectionPlayerItem) ejectionPlayerItem = [AVPlayerItem playerItemWithURL:ejectionUrl];
@@ -43,8 +43,9 @@
 
     [[[self view] layer] addSublayer:ejectionPlayerLayer];
 
-
 	[[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:nil];
+
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ejectionVideoFinishedPlaying) name:AVPlayerItemDidPlayToEndTimeNotification object:[ejectionPlayer currentItem]];
 
 }
 
@@ -65,11 +66,114 @@
 
 }
 
-- (void)viewWillDisappear:(BOOL)animated {
+- (void)viewWillDisappear:(BOOL)animated { // unhide faceid lock and homebar when passcode disappears
 
 	%orig;
 
 	[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockUnhideElements" object:nil];
+
+}
+
+%new
+- (void)ejectionVideoFinishedPlaying { // hide ejection video when done playing
+
+	[ejectionPlayerLayer setHidden:YES];
+	[ejectionPlayer pause];
+	[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
+
+}
+
+%end
+
+%hook SBNumberPadWithDelegate
+
+// - (void)setFrame:(CGRect)frame {
+
+// 	CGRect newFrame = frame;
+// 	newFrame.origin.y += 130;
+
+// 	%orig(newFrame);
+
+// }
+
+- (void)didMoveToWindow { // add passcode background image
+
+	%orig;
+	
+	if (!passcodeBackground) {
+		passcodeBackground = [[UIImageView alloc] initWithFrame:[self bounds]];
+		passcodeBackground.bounds = CGRectInset(passcodeBackground.frame, -35, -35);
+		[passcodeBackground setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeBackground.png"]];
+	}
+
+	if (![passcodeBackground isDescendantOfView:self]) [self insertSubview:passcodeBackground atIndex:0];
+
+	self.transform = CGAffineTransformMakeScale(0.85, 0.85);
+
+}
+
+%end
+
+%hook SBPasscodeNumberPadButton
+
+- (void)didMoveToWindow { // add passcode button image
+
+	%orig;
+
+	passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
+	passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
+	[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButton.png"]];
+
+	if (![passcodeButton isDescendantOfView:self]) [self addSubview:passcodeButton];
+
+}
+
+%end
+
+%hook TPNumberPadButton
+
+- (void)setColor:(UIColor *)arg1 { // remove passcode button background
+
+	%orig(nil);
+
+}
+
+- (void)setHighlighted:(BOOL)arg1 { // disable passcode button highlighting
+
+	%orig(NO);
+
+}
+
+%end
+
+%hook SBUIPasscodeLockNumberPad
+
+- (void)didMoveToWindow { // add emergency, backspace and cancel button image
+
+	%orig;
+
+	SBUIButton* emergencyButton = MSHookIvar<SBUIButton *>(self, "_emergencyCallButton");
+	SBUIButton* backspaceButton = MSHookIvar<SBUIButton *>(self, "_backspaceButton");
+	SBUIButton* cancelButton = MSHookIvar<SBUIButton *>(self, "_cancelButton");
+
+	[emergencyButton removeFromSuperview];
+	[backspaceButton removeFromSuperview];
+	[cancelButton removeFromSuperview];
+
+	// emergencyButtonImage = [[UIImageView alloc] initWithFrame:[emergencyButton bounds]];
+	// [emergencyButtonImage setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButton.png"]];
+	// emergencyButtonImage.bounds = CGRectInset(emergencyButtonImage.frame, 15, 10);
+	// if (![emergencyButtonImage isDescendantOfView:emergencyButton]) [emergencyButton addSubview:emergencyButtonImage];
+
+	// backspaceButtonImage = [[UIImageView alloc] initWithFrame:[backspaceButton bounds]];
+	// [backspaceButtonImage setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButton.png"]];
+	// backspaceButtonImage.bounds = CGRectInset(backspaceButtonImage.frame, 15, 10);
+	// if (![backspaceButtonImage isDescendantOfView:backspaceButton]) [backspaceButton addSubview:backspaceButtonImage];
+
+	// cancelButtonImage = [[UIImageView alloc] initWithFrame:[cancelButton bounds]];
+	// [cancelButtonImage setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButton.png"]];
+	// cancelButtonImage.bounds = CGRectInset(cancelButtonImage.frame, 15, 10);
+	// if (![cancelButtonImage isDescendantOfView:cancelButton]) [cancelButton addSubview:cancelButtonImage];
 
 }
 
@@ -111,7 +215,7 @@
 
 %hook SBUIPasscodeLockViewBase 
 
-- (void)_sendDelegateKeypadKeyDown { // play random button sound
+- (void)_sendDelegateKeypadKeyDown { // play random button sound when pressing passcode button
 
 	%orig;
 
@@ -145,6 +249,14 @@
 
 }
 
+- (void)dealloc { // remove observer
+	
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
+    
+	%orig;
+
+}
+
 %end
 
 %hook SBUIPasscodeLockViewWithKeypad
@@ -155,21 +267,15 @@
 
 }
 
-%end
-
-%hook SBUIPasscodeLockNumberPad
-
-- (void)didMoveToWindow { // hide emergency, cancel and backspace button
+- (void)touchesBegan:(id)arg1 withEvent:(id)arg2 { // hide ejection video when tapping the bottom of the screen
 
 	%orig;
 
-	SBUIButton* emergencyButton = MSHookIvar<SBUIButton *>(self, "_emergencyCallButton");
-	SBUIButton* backspaceButton = MSHookIvar<SBUIButton *>(self, "_backspaceButton");
-	SBUIButton* cancelButton = MSHookIvar<SBUIButton *>(self, "_cancelButton");
-	
-	[emergencyButton setHidden:YES];
-	[backspaceButton setHidden:YES];
-	[cancelButton setHidden:YES];
+	if (![ejectionPlayerLayer isHidden]) {
+		[ejectionPlayerLayer setHidden:YES];
+		[ejectionPlayer pause];
+		[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
+	}
 
 }
 
@@ -193,6 +299,14 @@
 		[self setHidden:YES];
 	else if ([notification.name isEqual:@"amonglockUnhideElements"])
 		[self setHidden:NO];
+
+}
+
+- (void)dealloc { // remove observer
+	
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
+    
+	%orig;
 
 }
 
