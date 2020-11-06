@@ -75,8 +75,9 @@
 }
 
 %new
-- (void)ejectionVideoFinishedPlaying { // hide ejection video when done playing
+- (void)ejectionVideoFinishedPlaying { // reset buttons and hide ejection video when done playing
 
+	[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockFailedAttemptReset" object:nil];
 	[ejectionPlayerLayer setHidden:YES];
 	[ejectionPlayer pause];
 	[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
@@ -128,16 +129,67 @@
 
 	[self performSelector:@selector(changePasscodeButtonImages) withObject:self afterDelay:0.5];
 
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(failedPasscodeAttemptAnimation:) name:@"amonglockFailedAttemptAnimation" object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(changePasscodeButtonImages) name:@"amonglockFailedAttemptReset" object:nil];
+
 }
 
 %new
-- (void)changePasscodeButtonImages {
+- (void)changePasscodeButtonImages { // change passcode images to the 'on' state images
 
 	passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
 	passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
 	[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButtonOn.png"]];
 
 	if (![passcodeButton isDescendantOfView:self]) [self addSubview:passcodeButton];
+
+}
+
+%new
+- (void)failedPasscodeAttemptAnimation:(NSNotification *)notification {
+
+	if (![notification.name isEqual:@"amonglockFailedAttemptAnimation"]) return;
+
+	AudioServicesPlaySystemSound(1521);
+
+	passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
+	passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
+	[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButtonFailed.png"]];
+
+	if (![passcodeButton isDescendantOfView:self]) [self addSubview:passcodeButton];
+
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.3 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+		passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
+		passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
+		[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButtonOn.png"]];
+
+		if (![passcodeButton isDescendantOfView:self]) [self addSubview:passcodeButton];
+	});
+
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.6 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+		passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
+		passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
+		[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButtonFailed.png"]];
+
+		if (![passcodeButton isDescendantOfView:self]) [self addSubview:passcodeButton];
+	});
+
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.9 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+		passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
+		passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
+		[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButtonOn.png"]];
+
+		if (![passcodeButton isDescendantOfView:self]) [self addSubview:passcodeButton];
+	});
+
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+		passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
+		passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
+		[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButtonOff.png"]];
+
+		if (![passcodeButton isDescendantOfView:self]) [self addSubview:passcodeButton];
+	});
 
 }
 
@@ -163,24 +215,9 @@
 	SBUIButton* backspaceButton = MSHookIvar<SBUIButton *>(self, "_backspaceButton");
 	SBUIButton* cancelButton = MSHookIvar<SBUIButton *>(self, "_cancelButton");
 
-	[emergencyButton removeFromSuperview];
-	[backspaceButton removeFromSuperview];
-	[cancelButton removeFromSuperview];
-
-	// emergencyButtonImage = [[UIImageView alloc] initWithFrame:[emergencyButton bounds]];
-	// [emergencyButtonImage setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButton.png"]];
-	// emergencyButtonImage.bounds = CGRectInset(emergencyButtonImage.frame, 15, 10);
-	// if (![emergencyButtonImage isDescendantOfView:emergencyButton]) [emergencyButton addSubview:emergencyButtonImage];
-
-	// backspaceButtonImage = [[UIImageView alloc] initWithFrame:[backspaceButton bounds]];
-	// [backspaceButtonImage setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButton.png"]];
-	// backspaceButtonImage.bounds = CGRectInset(backspaceButtonImage.frame, 15, 10);
-	// if (![backspaceButtonImage isDescendantOfView:backspaceButton]) [backspaceButton addSubview:backspaceButtonImage];
-
-	// cancelButtonImage = [[UIImageView alloc] initWithFrame:[cancelButton bounds]];
-	// [cancelButtonImage setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButton.png"]];
-	// cancelButtonImage.bounds = CGRectInset(cancelButtonImage.frame, 15, 10);
-	// if (![cancelButtonImage isDescendantOfView:cancelButton]) [cancelButton addSubview:cancelButtonImage];
+	// [emergencyButton removeFromSuperview];
+	// [backspaceButton removeFromSuperview];
+	// [cancelButton removeFromSuperview];
 
 }
 
@@ -193,9 +230,13 @@
 	%orig;
 
 	if ([self isUILocked]) {
-		[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
-		[ejectionPlayerLayer setHidden:NO];
-		[ejectionPlayer play];
+		[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockFailedAttemptAnimation" object:nil];
+		
+		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.5 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+			[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
+			[ejectionPlayerLayer setHidden:NO];
+			[ejectionPlayer play];
+		});
 
 		SystemSoundID sound = 0;
 		AudioServicesDisposeSystemSoundID(sound);
@@ -279,6 +320,7 @@
 	%orig;
 
 	if (![ejectionPlayerLayer isHidden]) {
+		[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockFailedAttemptReset" object:nil];
 		[ejectionPlayerLayer setHidden:YES];
 		[ejectionPlayer pause];
 		[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];

@@ -22,14 +22,15 @@ UIImageView* cancelButtonImage;
 - (void)ejectionVideoFinishedPlaying;
 @end
 
-@interface SBNumberPadWithDelegate : UIView
+@interface SBNumberPadWithDelegate : UIControl
 @end
 
-@interface SBPasscodeNumberPadButton : UIView
+@interface SBPasscodeNumberPadButton : UIControl
 - (void)changePasscodeButtonImages;
+- (void)failedPasscodeAttemptAnimation:(NSNotification *)notification;
 @end
 
-@interface TPNumberPadButton : UIView
+@interface TPNumberPadButton : UIControl
 @end
 
 @interface SBLockScreenManager : NSObject
