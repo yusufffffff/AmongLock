@@ -19,6 +19,7 @@ BOOL enabled;
 
 		if (!backgroundPlayer) backgroundPlayer = [AVQueuePlayer playerWithPlayerItem:backgroundPlayerItem];
 		[backgroundPlayer setVolume:0.0];
+		[backgroundPlayer setPreventsDisplaySleepDuringVideoPlayback:NO];
 
 		if (!backgroundPlayerLooper) backgroundPlayerLooper = [AVPlayerLooper playerLooperWithPlayer:backgroundPlayer templateItem:backgroundPlayerItem];
 
@@ -45,6 +46,7 @@ BOOL enabled;
 
     if (!ejectionPlayer) ejectionPlayer = [AVPlayer playerWithPlayerItem:ejectionPlayerItem];
     [ejectionPlayer setVolume:1.0];
+	[ejectionPlayer setPreventsDisplaySleepDuringVideoPlayback:NO];
 
     if (!ejectionPlayerLayer) ejectionPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:ejectionPlayer];
     [ejectionPlayerLayer setVideoGravity:AVLayerVideoGravityResizeAspectFill];
@@ -116,6 +118,7 @@ BOOL enabled;
 
 	if (!backgroundPlayer) backgroundPlayer = [AVQueuePlayer playerWithPlayerItem:backgroundPlayerItem];
 	[backgroundPlayer setVolume:0.0];
+	[backgroundPlayer setPreventsDisplaySleepDuringVideoPlayback:NO];
 
 	if (!backgroundPlayerLooper) backgroundPlayerLooper = [AVPlayerLooper playerLooperWithPlayer:backgroundPlayer templateItem:backgroundPlayerItem];
 

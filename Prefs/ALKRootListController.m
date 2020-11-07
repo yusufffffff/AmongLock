@@ -82,6 +82,7 @@ UIImage* currentArtwork;
 
     self.player = [AVPlayer playerWithPlayerItem:[self playerItem]];
     [[self player] setVolume:0.0];
+    if (@available(iOS 13.0, *)) [[self player] setPreventsDisplaySleepDuringVideoPlayback:NO];
 
     self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:[self player]];
     // [[self playerLayer] setVideoGravity:AVLayerVideoGravityResizeAspectFill];
