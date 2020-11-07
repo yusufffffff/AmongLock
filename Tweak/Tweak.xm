@@ -196,6 +196,14 @@ BOOL enabled;
 
 %hook SBUIPasscodeTextField
 
+- (id)initWithFrame:(CGRect)frame { // add notification observer
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveUnlockNotification:) name:@"amonglockUnlockedWithBiometrics" object:nil];
+
+	return %orig;
+
+}
+
 - (void)setText:(NSString *)arg1 { // update bulbs when entering passcode
 
     %orig;
@@ -216,6 +224,18 @@ BOOL enabled;
             }
         }
     }
+
+}
+
+%new
+- (void)receiveUnlockNotification:(NSNotification *)notification {
+
+	if (![notification.name isEqual:@"amonglockUnlockedWithBiometrics"]) return;
+	SBUINumericPasscodeEntryFieldBase* entryBase = [self delegate];
+	if ([entryBase maxNumbersAllowed] == 4)
+		[self setText:@"0000"];
+	else if ([entryBase maxNumbersAllowed] == 6)
+		[self setText:@"000000"];
 
 }
 
@@ -395,6 +415,18 @@ BOOL enabled;
 		AudioServicesCreateSystemSoundID((CFURLRef) CFBridgingRetain([NSURL fileURLWithPath:@"/Library/PreferenceBundles/AmongLockPrefs.bundle/passcodeDisappeared.mp3"]), &sound);
 		AudioServicesPlaySystemSound((SystemSoundID)sound);
 	}
+
+}
+
+%end
+
+%hook SBDashBoardBiometricUnlockController
+
+- (void)setAuthenticated:(BOOL)arg1 {
+
+	%orig;
+
+	if (arg1) [[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockUnlockedWithBiometrics" object:nil];
 
 }
 

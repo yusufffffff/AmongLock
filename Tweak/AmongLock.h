@@ -59,6 +59,7 @@ BOOL tapToDismissEjectionSwitch = YES;
 
 @interface SBUIPasscodeTextField : UIView
 @property(assign, nonatomic)id delegate;
+- (void)setText:(NSString *)arg1;
 @end
 
 @interface SBNumberPadWithDelegate : UIControl
