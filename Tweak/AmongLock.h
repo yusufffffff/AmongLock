@@ -1,11 +1,16 @@
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioServices.h>
+#import <sys/utsname.h>
 #import <Cephei/HBPreferences.h>
 
 HBPreferences* preferences;
 
 extern BOOL enabled;
+
+BOOL isiPhone = NO;
+BOOL isiPod = NO;
+BOOL isiPad = NO;
 
 AVQueuePlayer* backgroundPlayer;
 AVPlayerLooper* backgroundPlayerLooper;
@@ -23,7 +28,14 @@ UIImageView* emergencyButtonImage;
 UIImageView* backspaceButtonImage;
 UIImageView* cancelButtonImage;
 
+// background video
 BOOL useAsWallpaperSwitch = NO;
+
+// hiding
+BOOL hideEmergencyButtonSwitch = NO;
+BOOL hideBackspaceButtonSwitch = NO;
+BOOL hideCancelButtonSwitch = NO;
+BOOL hideFaceIDAnimationSwitch = YES;
 
 @interface CSPasscodeViewController : UIViewController
 - (void)ejectionVideoFinishedPlaying;
@@ -36,6 +48,10 @@ BOOL useAsWallpaperSwitch = NO;
 @end
 
 @interface SBUISimpleFixedDigitPasscodeEntryField : UIView
+@end
+
+@interface SBUINumericPasscodeEntryFieldBase : UIView
+@property(assign, nonatomic)unsigned long long maxNumbersAllowed;
 @end
 
 @interface SBUIPasscodeTextField : UIView
@@ -71,7 +87,4 @@ BOOL useAsWallpaperSwitch = NO;
 
 @interface CSTeachableMomentsContainerView : UIView
 - (void)receiveHideNotification:(NSNotification *)notification;
-@end
-
-@interface SBUIButton : UIButton
 @end

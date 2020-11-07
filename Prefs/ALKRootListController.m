@@ -71,11 +71,27 @@ UIImage* currentArtwork;
     self.headerView = [[UIView alloc] initWithFrame:CGRectMake(0,0,200,200)];
     self.headerImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0,0,200,200)];
     self.headerImageView.contentMode = UIViewContentModeScaleAspectFill;
-    self.headerImageView.image = [UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/AmongLockPrefs.bundle/Banner.png"];
+    // self.headerImageView.image = [UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/AmongLockPrefs.bundle/Banner.png"];
     self.headerImageView.translatesAutoresizingMaskIntoConstraints = NO;
     self.headerImageView.clipsToBounds = YES;
 
+    NSString* filePath = [NSString stringWithFormat:@"/Library/PreferenceBundles/AmongLock.bundle/Banner.mp4"];
+    NSURL* url = [NSURL fileURLWithPath:filePath];
+
+    self.playerItem = [AVPlayerItem playerItemWithURL:url];
+
+    self.player = [AVPlayer playerWithPlayerItem:[self playerItem]];
+    [[self player] setVolume:0.0];
+
+    self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:[self player]];
+    // [[self playerLayer] setVideoGravity:AVLayerVideoGravityResizeAspectFill];
+    [[self playerLayer] setFrame:[[[self headerImageView] layer] bounds]];
+	[[self playerLayer] setHidden:NO];
+
+	[[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:nil];
+
     [self.headerView addSubview:self.headerImageView];
+    [self.headerImageView.layer addSublayer:self.playerLayer];
     [NSLayoutConstraint activateConstraints:@[
         [self.headerImageView.topAnchor constraintEqualToAnchor:self.headerView.topAnchor],
         [self.headerImageView.leadingAnchor constraintEqualToAnchor:self.headerView.leadingAnchor],
@@ -84,6 +100,8 @@ UIImage* currentArtwork;
     ]];
 
     _table.tableHeaderView = self.headerView;
+
+    [[self player] play];
     
 }
 
