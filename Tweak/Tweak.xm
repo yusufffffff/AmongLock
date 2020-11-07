@@ -348,7 +348,7 @@ BOOL enabled;
 
 - (void)setShowsCancelButton:(BOOL)arg1 { // hide cancel button
 
-	if (hideCancelButtonSwitch)
+	if (hideEmergencyButtonSwitch)
 		%orig(NO);
 	else
 		%orig;
