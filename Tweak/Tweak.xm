@@ -501,6 +501,7 @@ BOOL enabled;
 
 	%orig;
 
+	if (!tapToDismissEjectionSwitch) return;
 	if (![ejectionPlayerLayer isHidden]) {
 		[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockFailedAttemptReset" object:nil];
 		[ejectionPlayerLayer setHidden:YES];
@@ -592,6 +593,9 @@ BOOL enabled;
 	[preferences registerBool:&hideBackspaceButtonSwitch default:NO forKey:@"hideBackspaceButton"];
 	[preferences registerBool:&hideCancelButtonSwitch default:NO forKey:@"hideCancelButton"];
 	[preferences registerBool:&hideFaceIDAnimationSwitch default:YES forKey:@"hideFaceIDAnimation"];
+
+	// Miscellaneous
+	[preferences registerBool:&tapToDismissEjectionSwitch default:YES forKey:@"tapToDismissEjection"];
 
 	struct utsname systemInfo;
     uname(&systemInfo);

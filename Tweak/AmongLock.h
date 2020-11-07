@@ -37,6 +37,9 @@ BOOL hideBackspaceButtonSwitch = NO;
 BOOL hideCancelButtonSwitch = NO;
 BOOL hideFaceIDAnimationSwitch = YES;
 
+// miscellaneous
+BOOL tapToDismissEjectionSwitch = YES;
+
 @interface CSPasscodeViewController : UIViewController
 - (void)ejectionVideoFinishedPlaying;
 @end
