@@ -1,5 +1,7 @@
 #import "AmongLock.h"
 
+BOOL enabled;
+
 %group AmongLock
 
 %hook CSPasscodeViewController
@@ -9,26 +11,28 @@
 	%orig;
 
 	// background video
-	NSString* backgroundFilePath = [NSString stringWithFormat:@"/Library/AmongLock/background.mp4"];
-    NSURL* backgroundUrl = [NSURL fileURLWithPath:backgroundFilePath];
+	if (!useAsWallpaperSwitch) {
+		NSString* backgroundFilePath = [NSString stringWithFormat:@"/Library/AmongLock/background.mp4"];
+		NSURL* backgroundUrl = [NSURL fileURLWithPath:backgroundFilePath];
 
-    if (!backgroundPlayerItem) backgroundPlayerItem = [AVPlayerItem playerItemWithURL:backgroundUrl];
+		if (!backgroundPlayerItem) backgroundPlayerItem = [AVPlayerItem playerItemWithURL:backgroundUrl];
 
-    if (!backgroundPlayer) backgroundPlayer = [AVQueuePlayer playerWithPlayerItem:backgroundPlayerItem];
-    [backgroundPlayer setVolume:0.0];
+		if (!backgroundPlayer) backgroundPlayer = [AVQueuePlayer playerWithPlayerItem:backgroundPlayerItem];
+		[backgroundPlayer setVolume:0.0];
 
-	if (!backgroundPlayerLooper) backgroundPlayerLooper = [AVPlayerLooper playerLooperWithPlayer:backgroundPlayer templateItem:backgroundPlayerItem];
+		if (!backgroundPlayerLooper) backgroundPlayerLooper = [AVPlayerLooper playerLooperWithPlayer:backgroundPlayer templateItem:backgroundPlayerItem];
 
-    if (!backgroundPlayerLayer) backgroundPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:backgroundPlayer];
-    [backgroundPlayerLayer setVideoGravity:AVLayerVideoGravityResizeAspectFill];
-    [backgroundPlayerLayer setFrame:[[[self view] layer] bounds]];
-	[backgroundPlayerLayer setHidden:YES];
+		if (!backgroundPlayerLayer) backgroundPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:backgroundPlayer];
+		[backgroundPlayerLayer setVideoGravity:AVLayerVideoGravityResizeAspectFill];
+		[backgroundPlayerLayer setFrame:[[[self view] layer] bounds]];
+		[backgroundPlayerLayer setHidden:YES];
 
-    [[[self view] layer] insertSublayer:backgroundPlayerLayer atIndex:1];
+		[[[self view] layer] insertSublayer:backgroundPlayerLayer atIndex:1];
+	}
 
 
 	// ejection video
-	NSString* ejectionFilePath = [NSString stringWithFormat:@"/Library/AmongLock/ejectionX3.mp4"];
+	NSString* ejectionFilePath = [NSString stringWithFormat:@"/Library/AmongLock/ejection.mp4"];
     NSURL* ejectionUrl = [NSURL fileURLWithPath:ejectionFilePath];
 
     if (!ejectionPlayerItem) ejectionPlayerItem = [AVPlayerItem playerItemWithURL:ejectionUrl];
@@ -55,9 +59,11 @@
 
 	[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockHideElements" object:nil];
 
-	[backgroundPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
-	[backgroundPlayerLayer setHidden:NO];
-	[backgroundPlayer play];
+	if (!useAsWallpaperSwitch) {
+		[backgroundPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
+		[backgroundPlayerLayer setHidden:NO];
+		[backgroundPlayer play];
+	}
 
 	SystemSoundID sound = 0;
 	AudioServicesDisposeSystemSoundID(sound);
@@ -71,6 +77,10 @@
 	%orig;
 
 	[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockUnhideElements" object:nil];
+
+	[ejectionPlayerLayer setHidden:YES];
+	[ejectionPlayer pause];
+	[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
 
 }
 
@@ -86,16 +96,122 @@
 
 %end
 
+%hook CSCoverSheetViewController
+
+- (void)viewDidLoad {
+
+	%orig;
+
+	if (!useAsWallpaperSwitch) return;
+	NSString* backgroundFilePath = [NSString stringWithFormat:@"/Library/AmongLock/background.mp4"];
+	NSURL* backgroundUrl = [NSURL fileURLWithPath:backgroundFilePath];
+
+	if (!backgroundPlayerItem) backgroundPlayerItem = [AVPlayerItem playerItemWithURL:backgroundUrl];
+
+	if (!backgroundPlayer) backgroundPlayer = [AVQueuePlayer playerWithPlayerItem:backgroundPlayerItem];
+	[backgroundPlayer setVolume:0.0];
+
+	if (!backgroundPlayerLooper) backgroundPlayerLooper = [AVPlayerLooper playerLooperWithPlayer:backgroundPlayer templateItem:backgroundPlayerItem];
+
+	if (!backgroundPlayerLayer) backgroundPlayerLayer = [AVPlayerLayer playerLayerWithPlayer:backgroundPlayer];
+	[backgroundPlayerLayer setVideoGravity:AVLayerVideoGravityResizeAspectFill];
+	[backgroundPlayerLayer setFrame:[[[self view] layer] bounds]];
+	[backgroundPlayerLayer setHidden:YES];
+
+	[[[self view] layer] insertSublayer:backgroundPlayerLayer atIndex:0];
+
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+
+	%orig;
+
+	if (!useAsWallpaperSwitch) return;
+	[backgroundPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
+	[backgroundPlayerLayer setHidden:NO];
+	[backgroundPlayer play];
+
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+
+	%orig;
+
+	if (!useAsWallpaperSwitch) return;
+	[backgroundPlayerLayer setHidden:YES];
+	[backgroundPlayer pause];
+	[backgroundPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
+
+}
+
+%end
+
+%hook CSPasscodeBackgroundView
+
+- (void)didMoveToWindow { // hide passcode blur and dim if background as wallpaper is enabled
+
+	%orig;
+
+	if (!useAsWallpaperSwitch) return;
+	MTMaterialView* blurView = MSHookIvar<MTMaterialView *>(self, "_materialView");
+	UIView* dimView1 = MSHookIvar<UIView *>(self, "_lightenSourceOverView");
+	UIView* dimView2 = MSHookIvar<UIView *>(self, "_plusDView");
+
+	[blurView setHidden:YES];
+	[dimView1 setHidden:YES];
+	[dimView2 setHidden:YES];
+
+}
+
+%end
+
+%hook SBUISimpleFixedDigitPasscodeEntryField
+
+- (void)didMoveToWindow { // add bulbs to the original passcode entry field
+
+	%orig;
+
+	[self setClipsToBounds:NO];
+
+	NSMutableArray* indicators = MSHookIvar<NSMutableArray *>(self, "_characterIndicators");
+	for (UIView* indicatorSubview in indicators) {
+		UIImageView* bulb = [[UIImageView alloc] initWithFrame:[indicatorSubview bounds]];
+		bulb.bounds = CGRectInset(bulb.frame, 2.5, -8.5);
+		[bulb setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/bulbOff.png"]];
+		[indicatorSubview addSubview:bulb];
+	}
+
+}
+
+%end
+
+%hook SBUIPasscodeTextField
+
+- (void)setText:(NSString *)arg1 { // update bulbs when entering passcode
+
+    %orig;
+
+    if ([[self delegate] isKindOfClass:%c(SBUISimpleFixedDigitPasscodeEntryField)]) {
+        NSMutableArray* indicators = [[self delegate] valueForKey:@"_characterIndicators"];
+
+        for (short i = 0; i < 3; i++) {
+            UIView* view = (UIView *)[indicators objectAtIndex:i];
+            for (UIImageView* imageView in [view subviews]) {
+                if ([imageView isKindOfClass:%c(UIImageView)]) {
+					if (i < [arg1 length])
+                        [imageView setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/bulbOn.png"]];
+                    else
+                        [imageView setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/bulbOff.png"]];
+				}
+            }
+        }
+    }
+
+}
+
+%end
+
 %hook SBNumberPadWithDelegate
-
-// - (void)setFrame:(CGRect)frame {
-
-// 	CGRect newFrame = frame;
-// 	newFrame.origin.y += 130;
-
-// 	%orig(newFrame);
-
-// }
 
 - (void)didMoveToWindow { // add passcode background image
 
@@ -151,8 +267,6 @@
 
 	if (![notification.name isEqual:@"amonglockFailedAttemptAnimation"]) return;
 
-	AudioServicesPlaySystemSound(1521);
-
 	passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
 	passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
 	[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/AmongLock/passcodeButtonFailed.png"]];
@@ -205,23 +319,23 @@
 
 %end
 
-%hook SBUIPasscodeLockNumberPad
+// %hook SBUIPasscodeLockNumberPad
 
-- (void)didMoveToWindow { // add emergency, backspace and cancel button image
+// - (void)didMoveToWindow { // add emergency, backspace and cancel button image
 
-	%orig;
+// 	%orig;
 
-	SBUIButton* emergencyButton = MSHookIvar<SBUIButton *>(self, "_emergencyCallButton");
-	SBUIButton* backspaceButton = MSHookIvar<SBUIButton *>(self, "_backspaceButton");
-	SBUIButton* cancelButton = MSHookIvar<SBUIButton *>(self, "_cancelButton");
+// 	SBUIButton* emergencyButton = MSHookIvar<SBUIButton *>(self, "_emergencyCallButton");
+// 	SBUIButton* backspaceButton = MSHookIvar<SBUIButton *>(self, "_backspaceButton");
+// 	SBUIButton* cancelButton = MSHookIvar<SBUIButton *>(self, "_cancelButton");
 
-	// [emergencyButton removeFromSuperview];
-	// [backspaceButton removeFromSuperview];
-	// [cancelButton removeFromSuperview];
+// 	[emergencyButton removeFromSuperview];
+// 	[backspaceButton removeFromSuperview];
+// 	[cancelButton removeFromSuperview];
 
-}
+// }
 
-%end
+// %end
 
 %hook SBLockScreenManager
 
@@ -247,9 +361,11 @@
 		[ejectionPlayer pause];
 		[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
 
-		[backgroundPlayerLayer setHidden:YES];
-		[backgroundPlayer pause];
-		[backgroundPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
+		if (!useAsWallpaperSwitch) {
+			[backgroundPlayerLayer setHidden:YES];
+			[backgroundPlayer pause];
+			[backgroundPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
+		}
 
 		SystemSoundID sound = 0;
 		AudioServicesDisposeSystemSoundID(sound);
@@ -276,6 +392,16 @@
 
 %end
 
+%hook SBUIPasscodeBiometricResource
+
+- (BOOL)hasBiometricAuthenticationCapabilityEnabled { // disable faceid animation when swiping up
+
+	return NO;
+
+}
+
+%end
+
 %hook SBUIProudLockIconView
 
 - (id)initWithFrame:(CGRect)frame { // add notification observer
@@ -289,6 +415,39 @@
 
 %new
 - (void)receiveHideNotification:(NSNotification *)notification { // hide or unhide faceid lock
+
+	if ([notification.name isEqual:@"amonglockHideElements"])
+		[self setHidden:YES];
+	else if ([notification.name isEqual:@"amonglockUnhideElements"])
+		[self setHidden:NO];
+
+}
+
+- (void)dealloc { // remove observer
+	
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
+    
+	%orig;
+
+}
+
+%end
+
+%hook SBFLockScreenDateView
+
+- (id)initWithFrame:(CGRect)frame { // add notification observer
+
+	if (useAsWallpaperSwitch) {
+		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveHideNotification:) name:@"amonglockHideElements" object:nil];
+		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveHideNotification:) name:@"amonglockUnhideElements" object:nil];
+	}
+
+	return %orig;
+
+}
+
+%new
+- (void)receiveHideNotification:(NSNotification *)notification { // hide or unhide homebar
 
 	if ([notification.name isEqual:@"amonglockHideElements"])
 		[self setHidden:YES];
@@ -330,6 +489,39 @@
 
 %end
 
+%hook CSQuickActionsButton
+
+- (id)initWithFrame:(CGRect)frame { // add notification observer
+
+	if (useAsWallpaperSwitch) {
+		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveHideNotification:) name:@"amonglockHideElements" object:nil];
+		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveHideNotification:) name:@"amonglockUnhideElements" object:nil];
+	}
+
+	return %orig;
+
+}
+
+%new
+- (void)receiveHideNotification:(NSNotification *)notification { // hide or unhide homebar
+
+	if ([notification.name isEqual:@"amonglockHideElements"])
+		[self setHidden:YES];
+	else if ([notification.name isEqual:@"amonglockUnhideElements"])
+		[self setHidden:NO];
+
+}
+
+- (void)dealloc { // remove observer
+	
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
+    
+	%orig;
+
+}
+
+%end
+
 %hook CSTeachableMomentsContainerView
 
 - (id)initWithFrame:(CGRect)frame { // add notification observer
@@ -361,20 +553,19 @@
 
 %end
 
-%hook SBUIPasscodeBiometricResource
-
-- (BOOL)hasBiometricAuthenticationCapabilityEnabled { // disable faceid animation when swiping up
-
-	return NO;
-
-}
-
-%end
-
 %end
 
 %ctor {
 
-	%init(AmongLock);
+	preferences = [[HBPreferences alloc] initWithIdentifier:@"love.litten.amonglockpreferences"];
+
+	[preferences registerBool:&enabled default:nil forKey:@"Enabled"];
+
+	// Background
+	[preferences registerBool:&useAsWallpaperSwitch default:NO forKey:@"useAsWallpaper"];
+
+	if (enabled) {
+		%init(AmongLock);
+	}
 
 }

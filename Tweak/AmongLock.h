@@ -1,6 +1,11 @@
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioServices.h>
+#import <Cephei/HBPreferences.h>
+
+HBPreferences* preferences;
+
+extern BOOL enabled;
 
 AVQueuePlayer* backgroundPlayer;
 AVPlayerLooper* backgroundPlayerLooper;
@@ -18,8 +23,23 @@ UIImageView* emergencyButtonImage;
 UIImageView* backspaceButtonImage;
 UIImageView* cancelButtonImage;
 
+BOOL useAsWallpaperSwitch = NO;
+
 @interface CSPasscodeViewController : UIViewController
 - (void)ejectionVideoFinishedPlaying;
+@end
+
+@interface CSCoverSheetViewController : UIViewController
+@end
+
+@interface MTMaterialView : UIView
+@end
+
+@interface SBUISimpleFixedDigitPasscodeEntryField : UIView
+@end
+
+@interface SBUIPasscodeTextField : UIView
+@property(assign, nonatomic)id delegate;
 @end
 
 @interface SBNumberPadWithDelegate : UIControl
@@ -38,6 +58,14 @@ UIImageView* cancelButtonImage;
 @end
 
 @interface SBUIProudLockIconView : UIView
+- (void)receiveHideNotification:(NSNotification *)notification;
+@end
+
+@interface SBFLockScreenDateView : UIView
+- (void)receiveHideNotification:(NSNotification *)notification;
+@end
+
+@interface CSQuickActionsButton : UIView
 - (void)receiveHideNotification:(NSNotification *)notification;
 @end
 
