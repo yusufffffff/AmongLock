@@ -57,7 +57,7 @@
 			<key>key</key>
 			<string>hideEmergencyButton</string>
 			<key>label</key>
-			<string>Hide Emergency Button</string>
+			<string>Hide Emergency Call Button</string>
 			<key>PostNotification</key>
 			<string>love.litten.amonglockpreferences/ReloadPrefs</string>
 		</dict>
@@ -71,7 +71,7 @@
 			<key>key</key>
 			<string>hideCancelButton</string>
 			<key>label</key>
-			<string>Hide Cancel/Backspace Button</string>
+			<string>Hide Backspace/Cancel Button</string>
 			<key>PostNotification</key>
 			<string>love.litten.amonglockpreferences/ReloadPrefs</string>
 		</dict>
