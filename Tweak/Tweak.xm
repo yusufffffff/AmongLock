@@ -58,11 +58,19 @@ BOOL enabled;
 	[[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:nil];
 
 
+	// view to block passcode
 	viewToBlockPasscode = [[UIView alloc] initWithFrame:[[self view] bounds]];
 	[viewToBlockPasscode setBackgroundColor:[UIColor clearColor]];
 	[viewToBlockPasscode setHidden:YES];
 
 	[[self view] addSubview:viewToBlockPasscode];
+
+	if (tapToDismissEjectionSwitch) {
+		UITapGestureRecognizer* tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(ejectionVideoFinishedPlaying)];
+		[tap setNumberOfTapsRequired:1];
+		[tap setNumberOfTouchesRequired:1];
+		[viewToBlockPasscode addGestureRecognizer:tap];
+	}
 
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ejectionVideoFinishedPlaying) name:AVPlayerItemDidPlayToEndTimeNotification object:[ejectionPlayer currentItem]];
 
@@ -306,7 +314,7 @@ BOOL enabled;
 
 	if (![notification.name isEqual:@"amonglockFailedAttemptAnimation"]) return;
 	if (isBlocked) return;
-
+	
 	passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
 	passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
 	[passcodeButton setImage:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/AmongLockPrefs.bundle/passcodeButtonFailed.png"]];
@@ -545,21 +553,6 @@ BOOL enabled;
 - (void)setStatusTitleView:(UILabel *)arg1 { // hide enter passcode text
 
 	%orig(nil);
-
-}
-
-- (void)touchesBegan:(id)arg1 withEvent:(id)arg2 { // hide ejection video when tapping the bottom of the screen
-
-	%orig;
-
-	if (!tapToDismissEjectionSwitch) return;
-	if (![ejectionPlayerLayer isHidden]) {
-		[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockFailedAttemptReset" object:nil];
-		[viewToBlockPasscode setHidden:YES];
-		[ejectionPlayerLayer setHidden:YES];
-		[ejectionPlayer pause];
-		[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
-	}
 
 }
 
