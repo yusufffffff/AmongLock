@@ -71,7 +71,7 @@
 			<key>key</key>
 			<string>hideCancelButton</string>
 			<key>label</key>
-			<string>Hide Cancel Button</string>
+			<string>Hide Cancel/Backspace Button</string>
 			<key>PostNotification</key>
 			<string>love.litten.amonglockpreferences/ReloadPrefs</string>
 		</dict>
@@ -106,7 +106,7 @@
 			<key>key</key>
 			<string>tapToDismissEjection</string>
 			<key>label</key>
-			<string>Tap Screen Bottom To Skip Ejection</string>
+			<string>Tap To Skip Ejection</string>
 			<key>PostNotification</key>
 			<string>love.litten.amonglockpreferences/ReloadPrefs</string>
 		</dict>
