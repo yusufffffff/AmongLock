@@ -8,6 +8,7 @@ HBPreferences* preferences;
 
 extern BOOL enabled;
 
+BOOL isBlocked = NO;
 BOOL isiPhone = NO;
 BOOL isiPod = NO;
 BOOL isiPad = NO;
@@ -21,6 +22,8 @@ AVPlayer* ejectionPlayer;
 AVPlayerItem* ejectionPlayerItem;
 AVPlayerLayer* ejectionPlayerLayer;
 
+UIView* viewToBlockPasscode;
+
 UIImageView* passcodeBackground;
 UIImageView* passcodeButton;
 
@@ -33,7 +36,6 @@ BOOL useAsWallpaperSwitch = NO;
 
 // hiding
 BOOL hideEmergencyButtonSwitch = NO;
-BOOL hideBackspaceButtonSwitch = NO;
 BOOL hideCancelButtonSwitch = NO;
 BOOL hideFaceIDAnimationSwitch = YES;
 
@@ -85,10 +87,17 @@ BOOL tapToDismissEjectionSwitch = YES;
 - (void)receiveHideNotification:(NSNotification *)notification;
 @end
 
+@interface NCNotificationListView : UIView
+- (void)receiveHideNotification:(NSNotification *)notification;
+@end
+
 @interface CSQuickActionsButton : UIView
 - (void)receiveHideNotification:(NSNotification *)notification;
 @end
 
 @interface CSTeachableMomentsContainerView : UIView
 - (void)receiveHideNotification:(NSNotification *)notification;
+@end
+
+@interface SBUIButton : UIButton
 @end

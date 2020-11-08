@@ -69,20 +69,6 @@
 			<key>defaults</key>
 			<string>love.litten.amonglockpreferences</string>
 			<key>key</key>
-			<string>hideBackspaceButton</string>
-			<key>label</key>
-			<string>Hide Backspace Button</string>
-			<key>PostNotification</key>
-			<string>love.litten.amonglockpreferences/ReloadPrefs</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
-			<key>defaults</key>
-			<string>love.litten.amonglockpreferences</string>
-			<key>key</key>
 			<string>hideCancelButton</string>
 			<key>label</key>
 			<string>Hide Cancel Button</string>

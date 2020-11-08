@@ -57,6 +57,13 @@ BOOL enabled;
 
 	[[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:nil];
 
+
+	viewToBlockPasscode = [[UIView alloc] initWithFrame:[[self view] bounds]];
+	[viewToBlockPasscode setBackgroundColor:[UIColor clearColor]];
+	[viewToBlockPasscode setHidden:YES];
+
+	[[self view] addSubview:viewToBlockPasscode];
+
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ejectionVideoFinishedPlaying) name:AVPlayerItemDidPlayToEndTimeNotification object:[ejectionPlayer currentItem]];
 
 }
@@ -86,6 +93,7 @@ BOOL enabled;
 
 	[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockUnhideElements" object:nil];
 
+	[viewToBlockPasscode setHidden:YES];
 	[ejectionPlayerLayer setHidden:YES];
 	[ejectionPlayer pause];
 	[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
@@ -96,6 +104,7 @@ BOOL enabled;
 - (void)ejectionVideoFinishedPlaying { // reset buttons and hide ejection video when done playing
 
 	[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockFailedAttemptReset" object:nil];
+	[viewToBlockPasscode setHidden:YES];
 	[ejectionPlayerLayer setHidden:YES];
 	[ejectionPlayer pause];
 	[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
@@ -185,7 +194,7 @@ BOOL enabled;
 	NSMutableArray* indicators = MSHookIvar<NSMutableArray *>(self, "_characterIndicators");
 	for (UIView* indicatorSubview in indicators) {
 		UIImageView* bulb = [[UIImageView alloc] initWithFrame:[indicatorSubview bounds]];
-		bulb.bounds = CGRectInset(bulb.frame, 2.5, -8.5);
+		bulb.bounds = CGRectInset([bulb frame], 2.5, -8.5);
 		[bulb setImage:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/AmongLockPrefs.bundle/bulbOff.png"]];
 		[indicatorSubview addSubview:bulb];
 	}
@@ -296,6 +305,7 @@ BOOL enabled;
 - (void)failedPasscodeAttemptAnimation:(NSNotification *)notification {
 
 	if (![notification.name isEqual:@"amonglockFailedAttemptAnimation"]) return;
+	if (isBlocked) return;
 
 	passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
 	passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
@@ -351,30 +361,21 @@ BOOL enabled;
 
 %hook SBUIPasscodeLockNumberPad
 
-- (void)setShowsEmergencyCallButton:(BOOL)arg1 { // hide emergency button
+- (void)didMoveToWindow { // hide emergency call, backspace, cancel button
 
-	if (hideEmergencyButtonSwitch)
-		%orig(NO);
-	else
-		%orig;
+	%orig;
 
-}
+	if (hideEmergencyButtonSwitch) {
+		SBUIButton* emergencyCallButton = MSHookIvar<SBUIButton *>(self, "_emergencyCallButton");
+		[emergencyCallButton removeFromSuperview];
+	}
 
-- (void)setShowsBackspaceButton:(BOOL)arg1 { // hide backspace button
-
-	if (hideBackspaceButtonSwitch)
-		%orig(NO);
-	else
-		%orig;
-
-}
-
-- (void)setShowsCancelButton:(BOOL)arg1 { // hide cancel button
-
-	if (hideCancelButtonSwitch)
-		%orig(NO);
-	else
-		%orig;
+	if (hideCancelButtonSwitch) {
+		SBUIButton* backspaceButton = MSHookIvar<SBUIButton *>(self, "_backspaceButton");
+		SBUIButton* cancelButton = MSHookIvar<SBUIButton *>(self, "_cancelButton");
+		[backspaceButton removeFromSuperview];
+		[cancelButton removeFromSuperview];
+	}
 
 }
 
@@ -389,6 +390,8 @@ BOOL enabled;
 	if ([self isUILocked]) {
 		[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockFailedAttemptAnimation" object:nil];
 		
+		if (isBlocked) return;
+		[viewToBlockPasscode setHidden:NO];
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.5 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
 			[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
 			[ejectionPlayerLayer setHidden:NO];
@@ -400,6 +403,7 @@ BOOL enabled;
 		AudioServicesCreateSystemSoundID((CFURLRef) CFBridgingRetain([NSURL fileURLWithPath:@"/Library/PreferenceBundles/AmongLockPrefs.bundle/wrongPasscode.mp3"]), &sound);
 		AudioServicesPlaySystemSound((SystemSoundID)sound);
 	} else {
+		[viewToBlockPasscode setHidden:YES];
 		[ejectionPlayerLayer setHidden:YES];
 		[ejectionPlayer pause];
 		[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
@@ -422,11 +426,23 @@ BOOL enabled;
 
 %hook SBDashBoardBiometricUnlockController
 
-- (void)setAuthenticated:(BOOL)arg1 {
+- (void)setAuthenticated:(BOOL)arg1 { // update bulbs when authenticated with biometrics
 
 	%orig;
 
 	if (arg1) [[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockUnlockedWithBiometrics" object:nil];
+
+}
+
+%end
+
+%hook SBFUserAuthenticationController
+
+- (BOOL)_isTemporarilyBlocked { // detect if device is temporarily blocked
+
+	isBlocked = %orig;
+
+	return %orig;
 
 }
 
@@ -539,10 +555,44 @@ BOOL enabled;
 	if (!tapToDismissEjectionSwitch) return;
 	if (![ejectionPlayerLayer isHidden]) {
 		[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockFailedAttemptReset" object:nil];
+		[viewToBlockPasscode setHidden:YES];
 		[ejectionPlayerLayer setHidden:YES];
 		[ejectionPlayer pause];
 		[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
 	}
+
+}
+
+%end
+
+%hook NCNotificationListView
+
+- (id)initWithFrame:(CGRect)frame { // add notification observer
+
+    if (useAsWallpaperSwitch) {
+		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveHideNotification:) name:@"amonglockHideElements" object:nil];
+		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveHideNotification:) name:@"amonglockUnhideElements" object:nil];
+	}
+
+	return %orig;
+
+}
+
+%new
+- (void)receiveHideNotification:(NSNotification *)notification { // hide or unhide homebar
+
+	if ([notification.name isEqual:@"amonglockHideElements"])
+		[self setHidden:YES];
+	else if ([notification.name isEqual:@"amonglockUnhideElements"])
+		[self setHidden:NO];
+
+}
+  
+- (void)dealloc { // remove observer
+	
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
+    
+	%orig;
 
 }
 
@@ -625,7 +675,6 @@ BOOL enabled;
 
 	// Hiding
 	[preferences registerBool:&hideEmergencyButtonSwitch default:NO forKey:@"hideEmergencyButton"];
-	[preferences registerBool:&hideBackspaceButtonSwitch default:NO forKey:@"hideBackspaceButton"];
 	[preferences registerBool:&hideCancelButtonSwitch default:NO forKey:@"hideCancelButton"];
 	[preferences registerBool:&hideFaceIDAnimationSwitch default:YES forKey:@"hideFaceIDAnimation"];
 
