@@ -9,6 +9,7 @@ HBPreferences* preferences;
 extern BOOL enabled;
 
 BOOL isBlocked = NO;
+int unlockSource;
 BOOL isiPhone = NO;
 BOOL isiPod = NO;
 BOOL isiPad = NO;

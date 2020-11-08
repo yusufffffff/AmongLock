@@ -313,7 +313,7 @@ BOOL enabled;
 - (void)failedPasscodeAttemptAnimation:(NSNotification *)notification {
 
 	if (![notification.name isEqual:@"amonglockFailedAttemptAnimation"]) return;
-	if (isBlocked) return;
+	if (isBlocked || (unlockSource == 18 || unlockSource == 9)) return;
 	
 	passcodeButton = [[UIImageView alloc] initWithFrame:[self bounds]];
 	passcodeButton.bounds = CGRectInset(passcodeButton.frame, 12, 7);
@@ -398,7 +398,7 @@ BOOL enabled;
 	if ([self isUILocked]) {
 		[[NSNotificationCenter defaultCenter] postNotificationName:@"amonglockFailedAttemptAnimation" object:nil];
 		
-		if (isBlocked) return;
+		if (isBlocked || (unlockSource == 18 || unlockSource == 9)) return;
 		[viewToBlockPasscode setHidden:NO];
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.5 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
 			[ejectionPlayer seekToTime:CMTimeMakeWithSeconds(0.0 , 1)];
@@ -427,6 +427,14 @@ BOOL enabled;
 		AudioServicesCreateSystemSoundID((CFURLRef) CFBridgingRetain([NSURL fileURLWithPath:@"/Library/PreferenceBundles/AmongLockPrefs.bundle/passcodeDisappeared.mp3"]), &sound);
 		AudioServicesPlaySystemSound((SystemSoundID)sound);
 	}
+
+}
+
+- (BOOL)unlockUIFromSource:(int)arg1 withOptions:(id)arg2 {
+
+	unlockSource = arg1;
+
+	return %orig;
 
 }
 
