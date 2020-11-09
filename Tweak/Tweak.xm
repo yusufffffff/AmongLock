@@ -146,6 +146,8 @@ BOOL enabled;
 
 	[[[self view] layer] insertSublayer:backgroundPlayerLayer atIndex:0];
 
+	[[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:nil];
+
 }
 
 - (void)viewWillAppear:(BOOL)animated { // play video when lockscreen appears
